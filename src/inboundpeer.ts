@@ -56,6 +56,12 @@ class InboundPeer {
 		// Set up event handlers
 		this.socket.on("data", this.processData.bind(this));
 		this.socket.on("end", this.kill.bind(this, true));
+		// Set up timeout for version command
+		this.socket.setTimeout(5000, (function(): void {
+			// If this calls after 5 seconds, the peer hasn't sent a version command yet so kill the connection
+			console.log("Peer with IP ".red + this.socket.remoteAddress + " timed out".red);
+			this.kill();
+		}).bind(this));
 	}
 	private processData(receivedBuffer: NodeBuffer): void {
 		console.log("Received: ", receivedBuffer);
@@ -111,6 +117,8 @@ class InboundPeer {
 			// Check if we're happy with this data
 			if (this.timeSkew < 3600) { // 1 hour
 				this.versionAcknowledge();
+				// Disable the inactivity timeout
+				this.socket.setTimeout(0);
 			}
 		}
 	}
@@ -129,6 +137,8 @@ class InboundPeer {
 		this.socket.write(message);
 	}
 	public kill(automatic: boolean = false): void {
+		if (!this.socket.remoteAddress)
+			return;
 		if (automatic) {
 			console.log("Inbound peer with IP " + this.socket.remoteAddress + " disconnected");
 		}
