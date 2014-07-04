@@ -48,9 +48,7 @@ class Peer {
 		crypto.pseudoRandomBytes(4).copy(payload, 8);
 		// Write current user, submission, comment, vote, and message height (in that order)
 		// For each, write each BigNum buffer length as a short int. Then, write the buffer
-		console.time("Concat");
 		Buffer.concat([userHeightLength, userHeight, submissionHeightLength, submissionHeight, commentHeightLength, commentHeight, voteHeightLength, voteHeight, messageHeightLength, messageHeight]).copy(payload, 12);
-		console.timeEnd("Concat");
 
 		var header: NodeBuffer = this.generateHeader(commandBytes.version, payload);
 
