@@ -15,7 +15,7 @@ enum commandBytes {
 }
 var defaultPort: number = 8555;
 
-class Peer {
+class OutboundPeer {
 	public ip: string;
 	public port: number;
 
@@ -70,4 +70,4 @@ class Peer {
 	}
 }
 
-export = Peer;
+export = OutboundPeer;
