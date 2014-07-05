@@ -48,6 +48,8 @@ class InboundPeer {
 		"votes": undefined,
 		"messages": undefined
 	};
+	private initialTimeout: number = 1000 * 20; // 20 seconds
+	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
 	constructor(socket: any) {
 		this.socket = socket;
@@ -57,8 +59,8 @@ class InboundPeer {
 		this.socket.on("data", this.processData.bind(this));
 		this.socket.on("end", this.kill.bind(this, true));
 		// Set up timeout for version command
-		this.socket.setTimeout(5000, (function(): void {
-			// If this calls after 5 seconds, the peer hasn't sent a version command yet so kill the connection
+		this.socket.setTimeout(this.initialTimeout, (function(): void {
+			// This timout is at first 20 seconds. After receiving a valid version message, the timeout is set to 10 minutes
 			console.log("Peer with IP ".red + this.socket.remoteAddress + " timed out".red);
 			this.kill();
 		}).bind(this));
@@ -118,7 +120,7 @@ class InboundPeer {
 			if (this.timeSkew < 3600) { // 1 hour
 				this.versionAcknowledge();
 				// Disable the inactivity timeout
-				this.socket.setTimeout(0);
+				this.socket.setTimeout(this.normalTimeout);
 			}
 		}
 	}
