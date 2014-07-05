@@ -4,6 +4,9 @@ import crypto = require("crypto");
 import net = require("net");
 var bignum = require("bignum");
 
+import Logging = require("./logging");
+var Log: Logging = new Logging();
+
 var magicHeader: number = 0xD6EE2BE9;
 enum commandBytes {
 	"version" = 0x1,

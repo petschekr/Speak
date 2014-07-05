@@ -4,6 +4,9 @@ import crypto = require("crypto");
 import net = require("net");
 var bignum = require("bignum");
 
+import Logging = require("./logging");
+var Log: Logging = new Logging();
+
 var colors = require("colors");
 
 var magicHeader: number = 0xD6EE2BE9;
@@ -54,27 +57,27 @@ class InboundPeer {
 	constructor(socket: any) {
 		this.socket = socket;
 		// New connection
-		console.log("Peer with IP ".blue + this.socket.remoteAddress + " connected".blue);
+		Log.info("Peer with IP " + this.socket.remoteAddress + " connected");
 		// Set up event handlers
 		this.socket.on("data", this.processData.bind(this));
 		this.socket.on("end", this.kill.bind(this, true));
 		// Set up timeout for version command
 		this.socket.setTimeout(this.initialTimeout, (function(): void {
 			// This timout is at first 20 seconds. After receiving a valid version message, the timeout is set to 10 minutes
-			console.log("Peer with IP ".red + this.socket.remoteAddress + " timed out".red);
+			Log.error("Peer with IP " + this.socket.remoteAddress + " timed out");
 			this.kill();
 		}).bind(this));
 	}
 	private processData(receivedBuffer: NodeBuffer): void {
-		console.log("Received: ", receivedBuffer);
+		Log.log("Received:", receivedBuffer);
 		if (receivedBuffer.length < 13 || receivedBuffer.readUInt32BE(0) !== magicHeader) {
-			console.log("Peer with IP ".yellow + this.socket.remoteAddress + " sent invalid header".yellow);
+			Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid header");
 			return;
 		}
 		var command = receivedBuffer.readUInt8(4);
 		// Check for validity of command
 		if (!commandBytes[command]) {
-			console.log("Peer with IP ".yellow + this.socket.remoteAddress + " sent invalid command ".yellow + "(" + command.toString(16) + ")");
+			Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid command " + "(" + command.toString(16) + ")");
 			return;
 		}
 		// Check for integrity of payload
@@ -82,10 +85,10 @@ class InboundPeer {
 		var payload = receivedBuffer.slice(13, 13 + payloadLength); // Node checks for reading past the last value in the buffer
 		var checksum = receivedBuffer.slice(9, 13);
 		if (crypto.createHash("sha256").update(payload).digest().slice(0, 4).toString() !== checksum.toString()) { // Can't compare buffers directly so compare the .toString()
-			console.log("Peer with IP ".yellow + this.socket.remoteAddress + " sent corrupted or missing data".yellow);
+			Log.warning("Peer with IP " + this.socket.remoteAddress + " sent corrupted or missing data");
 			return;
 		}
-		console.log("Peer with IP ".green + this.socket.remoteAddress + " sent data successfully".green);
+		Log.success("Peer with IP " + this.socket.remoteAddress + " sent data successfully");
 		this.processPayload(command, payload);
 	}
 	private processPayload(command: number, payload: NodeBuffer): void {
@@ -93,7 +96,7 @@ class InboundPeer {
 			// Peer is initiating the connection by sending a version command
 			// Reject if it's not long enough
 			if (payload.length < 22) {
-				console.log("Peer with IP ".yellow + this.socket.remoteAddress + " sent invalid version payload; closing connection".yellow);
+				Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid version payload; closing connection");
 				this.kill();
 				return;		
 			}
@@ -142,10 +145,10 @@ class InboundPeer {
 		if (!this.socket.remoteAddress)
 			return;
 		if (automatic) {
-			console.log("Inbound peer with IP " + this.socket.remoteAddress + " disconnected");
+			Log.log("Inbound peer with IP " + this.socket.remoteAddress + " disconnected");
 		}
 		else {
-			console.log("Disconnected from inbound peer with IP " + this.socket.remoteAddress);
+			Log.log("Disconnected from inbound peer with IP " + this.socket.remoteAddress);
 		}
 		this.socket.end();
 	}
