@@ -21,10 +21,6 @@ interface version {
 	patch: number; // backwards-compatible bug fixes
 	revision: number;
 }
-interface dataHeight {
-	name: string;
-	height: any; // bignum
-}
 
 class OutboundPeer {
 	public ip: string;
@@ -35,35 +31,17 @@ class OutboundPeer {
 	private version: version = {
 		"major": 0,
 		"minor": 0,
-		"patch": 0,
+		"patch": 1,
 		"revision": 0
 	};
 	public connectionNonce: string = undefined;
-	public dataHeights: {
-		users: any;
-		submissions: any;
-		comments: any;
-		votes: any;
-		messages: any;
-	} = {
-		"users": undefined,
-		"submissions": undefined,
-		"comments": undefined,
-		"votes": undefined,
-		"messages": undefined
-	};
+
 	private initialTimeout: number = 1000 * 20; // 20 seconds
 	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
 	constructor(ip: string, port: number) {
 		this.ip = ip;
 		this.port = port;
-		// Load how much data this node has
-		this.dataHeights.users = bignum(0);
-		this.dataHeights.submissions = bignum(0);
-		this.dataHeights.comments = bignum(0);
-		this.dataHeights.votes = bignum(0);
-		this.dataHeights.messages = bignum(0);
 
 		this.connect();
 	}
@@ -89,19 +67,8 @@ class OutboundPeer {
 		return messageHeader;
 	}
 	public announce(): void {
-		// Get data height buffers first
-		var userHeight: NodeBuffer = this.dataHeights.users.toBuffer();
-		var userHeightLength: NodeBuffer = new Buffer([userHeight.length]);
-		var submissionHeight: NodeBuffer = this.dataHeights.submissions.toBuffer();
-		var submissionHeightLength: NodeBuffer = new Buffer([submissionHeight.length]);
-		var commentHeight: NodeBuffer = this.dataHeights.comments.toBuffer();
-		var commentHeightLength: NodeBuffer = new Buffer([commentHeight.length]);
-		var voteHeight: NodeBuffer = this.dataHeights.votes.toBuffer();
-		var voteHeightLength: NodeBuffer = new Buffer([voteHeight.length]);
-		var messageHeight: NodeBuffer = this.dataHeights.messages.toBuffer();
-		var messageHeightLength: NodeBuffer = new Buffer([messageHeight.length]);
 		// Anounce to the peer by sending a version message
-		var payload = new Buffer(12 + 5 + userHeight.length + submissionHeight.length + commentHeight.length + voteHeight.length + messageHeight.length);
+		var payload = new Buffer(12);
 		// Write version
 		// 4 shorts each representing a part of the version
 		payload.writeUInt8(this.version.major, 0);
@@ -112,9 +79,6 @@ class OutboundPeer {
 		payload.writeUInt32BE(Math.round(Date.now() / 1000), 4);
 		// Write 32 bit nonce. From Bitcoin protocol: This nonce is used to detect connections to self
 		crypto.pseudoRandomBytes(4).copy(payload, 8);
-		// Write current user, submission, comment, vote, and message height (in that order)
-		// For each, write each BigNum buffer length as a short int. Then, write the buffer
-		Buffer.concat([userHeightLength, userHeight, submissionHeightLength, submissionHeight, commentHeightLength, commentHeight, voteHeightLength, voteHeight, messageHeightLength, messageHeight]).copy(payload, 12);
 
 		var header: NodeBuffer = this.generateHeader(commandBytes.version, payload);
 

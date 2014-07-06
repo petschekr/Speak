@@ -23,34 +23,19 @@ interface version {
 	patch: number; // backwards-compatible bug fixes
 	revision: number;
 }
-interface dataHeight {
-	name: string;
-	height: any; // bignum
-}
 class InboundPeer {
 	private socket: any;
-	private isConnected: boolean = false;
+	private connected: boolean = false;
+	private masterNode: boolean = false;
 	private version: version = {
-		"major": 0,
-		"minor": 0,
-		"patch": 0,
-		"revision": 0
+		"major": undefined,
+		"minor": undefined,
+		"patch": undefined,
+		"revision": undefined
 	};
 	private timeSkew: number = 0; // Seconds
 	public connectionNonce: string = undefined;
-	public dataHeights: {
-		users: any;
-		submissions: any;
-		comments: any;
-		votes: any;
-		messages: any;
-	} = {
-		"users": undefined,
-		"submissions": undefined,
-		"comments": undefined,
-		"votes": undefined,
-		"messages": undefined
-	};
+
 	private initialTimeout: number = 1000 * 20; // 20 seconds
 	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
@@ -95,10 +80,10 @@ class InboundPeer {
 		if (command === commandBytes.version) {
 			// Peer is initiating the connection by sending a version command
 			// Reject if it's not long enough
-			if (payload.length < 22) {
+			if (payload.length < 12) {
 				Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid version payload; closing connection");
 				this.kill();
-				return;		
+				return;
 			}
 			this.version.major = payload.readUInt8(0);
 			this.version.minor = payload.readUInt8(1);
@@ -107,23 +92,15 @@ class InboundPeer {
 			var peerTime: number = payload.readUInt32BE(4);
 			this.timeSkew = peerTime - Math.round(Date.now() / 1000);
 			this.connectionNonce = payload.slice(8, 12).toString("hex");
-			// Read data heights
-			var currentIndex: number = 12;
-			var userHeightLength: number = payload.readUInt8(currentIndex);
-			this.dataHeights.users = bignum.fromBuffer(payload.slice(++currentIndex, currentIndex += userHeightLength));
-			var submissionHeightLength: number = payload.readUInt8(++currentIndex);
-			this.dataHeights.submissions = bignum.fromBuffer(payload.slice(++currentIndex, currentIndex += submissionHeightLength));
-			var commentHeightLength: number = payload.readUInt8(++currentIndex);
-			this.dataHeights.comments = bignum.fromBuffer(payload.slice(++currentIndex, currentIndex += commentHeightLength));
-			var voteHeightLength: number = payload.readUInt8(++currentIndex);
-			this.dataHeights.votes = bignum.fromBuffer(payload.slice(++currentIndex, currentIndex += voteHeightLength));
-			var messageHeightLength: number = payload.readUInt8(++currentIndex);
-			this.dataHeights.messages = bignum.fromBuffer(payload.slice(++currentIndex, currentIndex += messageHeightLength));
 			// Check if we're happy with this data
 			if (this.timeSkew < 3600) { // 1 hour
 				this.versionAcknowledge();
 				// Disable the inactivity timeout
 				this.socket.setTimeout(this.normalTimeout);
+			}
+			else {
+				Log.warning("Peer with IP " + this.socket.remoteAddress + " has a clock skew of > 1 hour; closing connection");
+				this.kill();
 			}
 		}
 	}
