@@ -27,9 +27,9 @@ class OutboundPeer {
 	public port: number;
 
 	private socket: any; // net.Socket
-	public connected: boolean = false;
 	private db: any;
 
+	public stillAlive: boolean = true;
 	private version: version = {
 		"major": 0,
 		"minor": 0,
@@ -126,6 +126,7 @@ class OutboundPeer {
 		else {
 			Log.log("Disconnected from inbound peer with IP " + this.socket.remoteAddress);
 		}
+		this.stillAlive = false;
 		this.socket.end();
 	}
 }

@@ -35,10 +35,25 @@ var outboundPeers: OutboundPeer[] = [];
 var server = net.createServer(function(socket) {
 	// New connection
 	var inboundPeer: InboundPeer = new InboundPeer(socket, db);
+	inboundPeers.push(inboundPeer);
 });
 server.listen(defaultPort, function() {
 	Log.log("Server listening on port " + defaultPort);
 
 	var peer: OutboundPeer = new OutboundPeer("127.0.0.1", defaultPort, db);
 	peer.announce();
+	outboundPeers.push(peer);
 });
+
+// Purge dead connections every 10 seconds
+setInterval(function(): void {
+	var i: number;
+	for (i = inboundPeers.length - 1; i >= 0; i--) {
+		if (!inboundPeers[i].stillAlive) {
+			inboundPeers.splice(i, 1);
+	}
+	for (i = outboundPeers.length - 1; i >= 0; i--) {
+		if (!outboundPeers[i].stillAlive) {
+			outboundPeers.splice(i, 1);
+	}
+}, 1000 * 10);

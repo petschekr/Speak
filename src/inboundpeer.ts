@@ -25,7 +25,6 @@ interface version {
 }
 class InboundPeer {
 	private socket: any;
-	private connected: boolean = false;
 	private db: any;
 
 	private masterNode: boolean = false;
@@ -45,7 +44,8 @@ class InboundPeer {
 	private _pendingReceiveBuffer: NodeBuffer = new Buffer(0);
 	private _pendingReceiveBufferFinalSize: number = undefined;
 
-	constructor(socket: any) {
+	public stillAlive: boolean = true;
+
 	constructor(socket: any, db: any) {
 		this.socket = socket;
 		this.db = db;
@@ -162,6 +162,7 @@ class InboundPeer {
 		else {
 			Log.log("Disconnected from inbound peer with IP " + this.socket.remoteAddress);
 		}
+		this.stillAlive = false;
 		this.socket.end();
 	}
 }
