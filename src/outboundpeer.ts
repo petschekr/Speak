@@ -113,7 +113,6 @@ class OutboundPeer {
 		if (command === commandBytes.versionack) {
 			// Other peer acknowledged our version message and wants to connect with us
 			this.socket.setTimeout(this.normalTimeout);
-			this.connected = true;
 			Log.success("Peer with IP " + this.socket.remoteAddress + " acknowledged connection");
 		}
 	}
@@ -124,7 +123,7 @@ class OutboundPeer {
 			Log.log("Outbound peer with IP " + this.socket.remoteAddress + " disconnected");
 		}
 		else {
-			Log.log("Disconnected from inbound peer with IP " + this.socket.remoteAddress);
+			Log.log("Disconnected from outbound peer with IP " + this.socket.remoteAddress);
 		}
 		this.stillAlive = false;
 		this.socket.end();

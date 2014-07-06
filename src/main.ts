@@ -49,11 +49,28 @@ server.listen(defaultPort, function() {
 setInterval(function(): void {
 	var i: number;
 	for (i = inboundPeers.length - 1; i >= 0; i--) {
-		if (!inboundPeers[i].stillAlive) {
+		if (!inboundPeers[i].stillAlive)
 			inboundPeers.splice(i, 1);
 	}
 	for (i = outboundPeers.length - 1; i >= 0; i--) {
-		if (!outboundPeers[i].stillAlive) {
+		if (!outboundPeers[i].stillAlive)
 			outboundPeers.splice(i, 1);
 	}
 }, 1000 * 10);
+
+// Ctrl-C handler
+process.on("SIGINT", function(): void {
+	Log.log("Received SIGINT, shutting down...");
+
+	for (var i: number = 0; i < inboundPeers.length; i++) {
+		inboundPeers[i].kill();
+	}
+	for (var i: number = 0; i < outboundPeers.length; i++) {
+		outboundPeers[i].kill();
+	}
+	// Close the LevelDB instance
+	db.close(function(): void {
+		Log.log("Done shutting down");
+		process.exit(0);
+	});
+});
