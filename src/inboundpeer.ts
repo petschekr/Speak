@@ -39,12 +39,16 @@ class InboundPeer {
 	private initialTimeout: number = 1000 * 20; // 20 seconds
 	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
+	private _pendingReceive: boolean = false;
+	private _pendingReceiveBuffer: NodeBuffer = new Buffer(0);
+	private _pendingReceiveBufferFinalSize: number = undefined;
+
 	constructor(socket: any) {
 		this.socket = socket;
 		// New connection
 		Log.info("Peer with IP " + this.socket.remoteAddress + " connected");
 		// Set up event handlers
-		this.socket.on("data", this.processData.bind(this));
+		this.socket.on("data", this.processRawTCPData.bind(this));
 		this.socket.on("end", this.kill.bind(this, true));
 		// Set up timeout for version command
 		this.socket.setTimeout(this.initialTimeout, (function(): void {
@@ -53,12 +57,39 @@ class InboundPeer {
 			this.kill();
 		}).bind(this));
 	}
-	private processData(receivedBuffer: NodeBuffer): void {
-		Log.log("Received:", receivedBuffer);
-		if (receivedBuffer.length < 13 || receivedBuffer.readUInt32BE(0) !== magicHeader) {
-			Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid header");
-			return;
+	private processRawTCPData(receivedBuffer: NodeBuffer): void {
+		Log.log("Received:", receivedBuffer, receivedBuffer.length);
+
+		if (this._pendingReceive) {
+			// Waiting for more packets to fill out the entire payload
+			this._pendingReceiveBuffer = Buffer.concat([this._pendingReceiveBuffer, receivedBuffer]);
+			if (this._pendingReceiveBuffer.length >= this._pendingReceiveBufferFinalSize) {
+				this.processData(this._pendingReceiveBuffer);
+				this._pendingReceive = false;
+				this._pendingReceiveBufferFinalSize = undefined;
+			}
 		}
+		else {
+			// Not currently waiting for any more packets
+			if (receivedBuffer.length < 13 || receivedBuffer.readUInt32BE(0) !== magicHeader) {
+				Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid header");
+				return;
+			}
+			var payloadLength = receivedBuffer.readUInt32BE(5);
+			if (receivedBuffer.length < payloadLength) {
+				// We're waiting for the next packet(s) to arrive as part of the message
+				this._pendingReceiveBuffer = receivedBuffer;
+				this._pendingReceive = true;
+				this._pendingReceiveBufferFinalSize = payloadLength;
+			}
+			else {
+				this.processData(receivedBuffer);
+			}
+		}
+	}
+	private processData(receivedBuffer: NodeBuffer): void {
+		Log.log("Processing:", receivedBuffer, receivedBuffer.length);
+
 		var command = receivedBuffer.readUInt8(4);
 		// Check for validity of command
 		if (!commandBytes[command]) {
