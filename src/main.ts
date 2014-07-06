@@ -11,6 +11,15 @@ import Logging = require("./logging");
 var Log: Logging = new Logging();
 Log.begin();
 
+// Open connection to LevelDB
+var levelup = require("level");
+var db = levelup("./speak.db", {
+	"createIfMissing": true,
+	// Store keys and values as hex
+	"keyEncoding": "hex",
+	"valueEncoding": "hex"
+});
+
 var magicHeader: number = 0xD6EE2BE9;
 enum commandBytes {
 	"version" = 0x1,
@@ -25,11 +34,11 @@ var outboundPeers: OutboundPeer[] = [];
 // P2P Server
 var server = net.createServer(function(socket) {
 	// New connection
-	var inboundPeer: InboundPeer = new InboundPeer(socket);
+	var inboundPeer: InboundPeer = new InboundPeer(socket, db);
 });
 server.listen(defaultPort, function() {
 	Log.log("Server listening on port " + defaultPort);
 
-	var peer: OutboundPeer = new OutboundPeer("127.0.0.1", defaultPort);
+	var peer: OutboundPeer = new OutboundPeer("127.0.0.1", defaultPort, db);
 	peer.announce();
 });

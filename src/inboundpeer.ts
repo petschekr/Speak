@@ -26,6 +26,8 @@ interface version {
 class InboundPeer {
 	private socket: any;
 	private connected: boolean = false;
+	private db: any;
+
 	private masterNode: boolean = false;
 	private version: version = {
 		"major": undefined,
@@ -44,7 +46,9 @@ class InboundPeer {
 	private _pendingReceiveBufferFinalSize: number = undefined;
 
 	constructor(socket: any) {
+	constructor(socket: any, db: any) {
 		this.socket = socket;
+		this.db = db;
 		// New connection
 		Log.info("Peer with IP " + this.socket.remoteAddress + " connected");
 		// Set up event handlers

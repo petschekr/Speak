@@ -28,6 +28,8 @@ class OutboundPeer {
 
 	private socket: any; // net.Socket
 	public connected: boolean = false;
+	private db: any;
+
 	private version: version = {
 		"major": 0,
 		"minor": 0,
@@ -39,9 +41,10 @@ class OutboundPeer {
 	private initialTimeout: number = 1000 * 20; // 20 seconds
 	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
-	constructor(ip: string, port: number) {
+	constructor(ip: string, port: number, db: any) {
 		this.ip = ip;
 		this.port = port;
+		this.db = db;
 
 		this.connect();
 	}
