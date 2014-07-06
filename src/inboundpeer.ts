@@ -80,7 +80,7 @@ class InboundPeer {
 				// We're waiting for the next packet(s) to arrive as part of the message
 				this._pendingReceiveBuffer = receivedBuffer;
 				this._pendingReceive = true;
-				this._pendingReceiveBufferFinalSize = payloadLength;
+				this._pendingReceiveBufferFinalSize = payloadLength + 13; // Header is 13 bytes
 			}
 			else {
 				this.processData(receivedBuffer);
