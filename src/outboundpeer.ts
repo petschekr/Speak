@@ -58,6 +58,13 @@ class OutboundPeer {
 	constructor(ip: string, port: number) {
 		this.ip = ip;
 		this.port = port;
+		// Load how much data this node has
+		this.dataHeights.users = bignum(0);
+		this.dataHeights.submissions = bignum(0);
+		this.dataHeights.comments = bignum(0);
+		this.dataHeights.votes = bignum(0);
+		this.dataHeights.messages = bignum(0);
+
 		this.connect();
 	}
 	public connect(): void {
@@ -83,15 +90,15 @@ class OutboundPeer {
 	}
 	public announce(): void {
 		// Get data height buffers first
-		var userHeight: NodeBuffer = bignum(0).toBuffer();
+		var userHeight: NodeBuffer = this.dataHeights.users.toBuffer();
 		var userHeightLength: NodeBuffer = new Buffer([userHeight.length]);
-		var submissionHeight: NodeBuffer = bignum(0).toBuffer();
+		var submissionHeight: NodeBuffer = this.dataHeights.submissions.toBuffer();
 		var submissionHeightLength: NodeBuffer = new Buffer([submissionHeight.length]);
-		var commentHeight: NodeBuffer = bignum(0).toBuffer();
+		var commentHeight: NodeBuffer = this.dataHeights.comments.toBuffer();
 		var commentHeightLength: NodeBuffer = new Buffer([commentHeight.length]);
-		var voteHeight: NodeBuffer = bignum(0).toBuffer();
+		var voteHeight: NodeBuffer = this.dataHeights.votes.toBuffer();
 		var voteHeightLength: NodeBuffer = new Buffer([voteHeight.length]);
-		var messageHeight: NodeBuffer = bignum(0).toBuffer();
+		var messageHeight: NodeBuffer = this.dataHeights.messages.toBuffer();
 		var messageHeightLength: NodeBuffer = new Buffer([messageHeight.length]);
 		// Anounce to the peer by sending a version message
 		var payload = new Buffer(12 + 5 + userHeight.length + submissionHeight.length + commentHeight.length + voteHeight.length + messageHeight.length);
