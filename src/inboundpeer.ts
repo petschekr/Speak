@@ -13,7 +13,9 @@ var magicHeader: number = 0xD6EE2BE9;
 enum commandBytes {
 	"version" = 0x1,
 	"versionack" = 0x2,
-	"addr" = 0x3
+	"addresses" = 0x3,
+	"inventory" = 0x4,
+	"getdata" = 0x5
 }
 var defaultPort: number = 8555;
 
