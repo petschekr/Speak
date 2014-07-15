@@ -7,7 +7,7 @@ var colors = require("colors");
 
 class Log {
 	// Output to console or not
-	public silenced: boolean = false;
+	public silenced: boolean = true;
 	public logFilePath: string;
 	public writeStream: any; // Writable stream
 

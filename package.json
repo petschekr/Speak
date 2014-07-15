@@ -12,9 +12,9 @@
   },
   "dependencies": {
     "bs58": "^1.2.0",
-    "ecdsa": "^0.5.1",
-    "eckey": "^0.7.0",
-    "level": "^0.18.0"
+    "level": "^0.18.0",
+    "colors": "^0.6.2",
+    "sodium": "^1.0.11"
   },
   "license": "MIT"
 }

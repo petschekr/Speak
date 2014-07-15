@@ -2,7 +2,6 @@
 /// <reference path="../typescript_defs/colors.d.ts" />
 import crypto = require("crypto");
 import net = require("net");
-var bignum = require("bignum");
 
 import Logging = require("./logging");
 var Log: Logging = new Logging();
