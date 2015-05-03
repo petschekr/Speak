@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+		"module": "commonjs",
+		"outDir": "build",
+        "sourceMap": true,
+		"target": "es5"
+    },
+	"files": [
+		"src/hashing.ts",
+		"src/inboundpeer.ts",
+		"src/outboundpeer.ts",
+		"src/logging.ts",
+		"src/main.ts"
+	]
+}

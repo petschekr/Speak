@@ -6,4 +6,4 @@ install:
   - "npm install -g typescript"
   - "npm install"
 script:
-  - "tsc --module commonjs --target es5 src/*.ts"
+  - "tsc"
