@@ -53,19 +53,19 @@ function setUp(): void {
 		outboundPeers.push(peer);
 	});
 }
-function openUserAccount(password: NodeBuffer): string {
+function openUserAccount(password: Buffer): string {
 	// Open user accounts using provided password
-	var rawAccounts: NodeBuffer = fs.readFileSync("accounts.dat", {"flag": "a+"});
+	var rawAccounts: Buffer = fs.readFileSync("accounts.dat", {"flag": "a+"});
 	if (rawAccounts.length === 0) {
 		// File didn't exist or is empty
-		var salt: NodeBuffer = crypto.randomBytes(32); // For PBKDF2
-		var iv: NodeBuffer = crypto.randomBytes(12); // For AES
-		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
+		var salt: Buffer = crypto.randomBytes(32); // For PBKDF2
+		var iv: Buffer = crypto.randomBytes(12); // For AES
+		var key: Buffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
 		
 		var cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
-		var encrypted: NodeBuffer = cipher.update(new Buffer("ff", "hex")); // Buffer with ff to signify no accounts created yet
-		encrypted += cipher.final();
-		var tag: NodeBuffer = cipher.getAuthTag();
+		var encrypted: Buffer = cipher.update(new Buffer("ff", "hex")); // Buffer with ff to signify no accounts created yet
+		encrypted = Buffer.concat([encrypted, cipher.final()]);
+		var tag: Buffer = cipher.getAuthTag();
 		
 		fs.writeFileSync("accounts.dat", Buffer.concat([salt, iv, tag, encrypted], salt.length + iv.length + tag.length + encrypted.length));
 		
@@ -73,18 +73,18 @@ function openUserAccount(password: NodeBuffer): string {
 	}
 	else {
 		// File exists; decrypt it
-		var salt: NodeBuffer = rawAccounts.slice(0, 32);
-		var iv: NodeBuffer = rawAccounts.slice(32, 44);
-		var tag: NodeBuffer = rawAccounts.slice(44, 60);
+		var salt: Buffer = rawAccounts.slice(0, 32);
+		var iv: Buffer = rawAccounts.slice(32, 44);
+		var tag: Buffer = rawAccounts.slice(44, 60);
 		if (salt.length !== 32 || iv.length !== 12 || tag.length !== 16)
 			return "Invalid accounts.dat file".red;
-		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
+		var key: Buffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
 		var encrypted = rawAccounts.slice(60, rawAccounts.length);
 		
 		var cipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
 		cipher.setAuthTag(tag);
 		var decrypted = cipher.update(encrypted);
-		decrypted += cipher.final();
+		decrypted = Buffer.concat([decrypted, cipher.final()]);
 		if (!decrypted)
 			return "Wrong password for the accounts.dat file".red;
 		if (Buffer.compare(new Buffer("ff", "hex"), decrypted) === 0)
