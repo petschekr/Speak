@@ -62,7 +62,7 @@ class OutboundPeer {
 			this.kill();
 		}).bind(this));
 	}
-	private generateHeader(command: number, payload: NodeBuffer): NodeBuffer {
+	private generateHeader(command: number, payload: Buffer): Buffer {
 		var messageHeader = new Buffer(13);
 		messageHeader.writeUInt32BE(magicHeader, 0); // Magic number header
 		messageHeader.writeUInt8(command, 4); // Command byte
@@ -84,12 +84,12 @@ class OutboundPeer {
 		// Write 32 bit nonce. From Bitcoin protocol: This nonce is used to detect connections to self
 		crypto.pseudoRandomBytes(4).copy(payload, 8);
 
-		var header: NodeBuffer = this.generateHeader(commandBytes.version, payload);
+		var header: Buffer = this.generateHeader(commandBytes.version, payload);
 
 		var message = Buffer.concat([header, payload], header.length + payload.length);
 		this.socket.write(message);
 	}
-	private processData(receivedBuffer: NodeBuffer): void {
+	private processData(receivedBuffer: Buffer): void {
 		if (receivedBuffer.length < 13 || receivedBuffer.readUInt32BE(0) !== magicHeader) {
 			Log.warning("Peer with IP " + this.socket.remoteAddress + " sent invalid header");
 			return;
@@ -110,7 +110,7 @@ class OutboundPeer {
 		}
 		this.processPayload(command, payload);
 	}
-	private processPayload(command: number, payload: NodeBuffer): void {
+	private processPayload(command: number, payload: Buffer): void {
 		if (command === commandBytes.versionack) {
 			// Other peer acknowledged our version message and wants to connect with us
 			this.socket.setTimeout(this.normalTimeout);

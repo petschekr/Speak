@@ -42,7 +42,7 @@ class InboundPeer {
 	private normalTimeout: number = 1000 * 60 * 10; // 10 minutes
 
 	private _pendingReceive: boolean = false;
-	private _pendingReceiveBuffer: NodeBuffer = new Buffer(0);
+	private _pendingReceiveBuffer: Buffer = new Buffer(0);
 	private _pendingReceiveBufferFinalSize: number = undefined;
 
 	public stillAlive: boolean = true;
@@ -62,7 +62,7 @@ class InboundPeer {
 			this.kill();
 		}).bind(this));
 	}
-	private processRawTCPData(receivedBuffer: NodeBuffer): void {
+	private processRawTCPData(receivedBuffer: Buffer): void {
 		Log.log("Received:", receivedBuffer, receivedBuffer.length);
 
 		if (this._pendingReceive) {
@@ -92,7 +92,7 @@ class InboundPeer {
 			}
 		}
 	}
-	private processData(receivedBuffer: NodeBuffer): void {
+	private processData(receivedBuffer: Buffer): void {
 		Log.log("Processing:", receivedBuffer, receivedBuffer.length);
 
 		var command = receivedBuffer.readUInt8(4);
@@ -112,7 +112,7 @@ class InboundPeer {
 		Log.success("Peer with IP " + this.socket.remoteAddress + " sent data successfully");
 		this.processPayload(command, payload);
 	}
-	private processPayload(command: number, payload: NodeBuffer): void {
+	private processPayload(command: number, payload: Buffer): void {
 		if (command === commandBytes.version) {
 			// Peer is initiating the connection by sending a version command
 			// Reject if it's not long enough
@@ -140,7 +140,7 @@ class InboundPeer {
 			}
 		}
 	}
-	private generateHeader(command: number, payload: NodeBuffer): NodeBuffer {
+	private generateHeader(command: number, payload: Buffer): Buffer {
 		var messageHeader = new Buffer(13);
 		messageHeader.writeUInt32BE(magicHeader, 0); // Magic number header
 		messageHeader.writeUInt8(command, 4); // Command byte
@@ -149,8 +149,8 @@ class InboundPeer {
 		return messageHeader;
 	}
 	private versionAcknowledge(): void {
-		var payload: NodeBuffer = new Buffer(0);
-		var header: NodeBuffer = this.generateHeader(commandBytes.versionack, payload);
+		var payload: Buffer = new Buffer(0);
+		var header: Buffer = this.generateHeader(commandBytes.versionack, payload);
 		var message = Buffer.concat([header, payload], header.length + payload.length);
 		this.socket.write(message);
 	}
