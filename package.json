@@ -14,7 +14,7 @@
     "bs58": "^1.2.0",
     "level": "^0.18.0",
     "colors": "^0.6.2",
-	"paixaop/node-sodium#develop": "*"
+	"eccrypto": "^0.9.8"
   },
   "license": "MIT"
 }

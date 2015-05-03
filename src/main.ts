@@ -6,7 +6,7 @@ var fs = require("fs");
 var repl = require("repl");
 
 var colors = require("colors");
-var sodium = require("sodium");
+var eccrypto = require("eccrypto");
 var levelup = require("level");
 
 import OutboundPeer = require("./outboundpeer");
@@ -59,29 +59,35 @@ function openUserAccount(password: NodeBuffer): string {
 	if (rawAccounts.length === 0) {
 		// File didn't exist or is empty
 		var salt: NodeBuffer = crypto.randomBytes(32); // For PBKDF2
-		var nonce: NodeBuffer = crypto.randomBytes(sodium.api.crypto_secretbox_NONCEBYTES); // For decryption
-		//var encryptionKeyPair = sodium.api.crypto_box_keypair();
-		//var signingKeyPair = sodium.api.crypto_sign_keypair();
-		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, sodium.api.crypto_secretbox_KEYBYTES);
-		var encrypted: NodeBuffer = sodium.api.crypto_secretbox(new Buffer("ff", "hex"), nonce, key); // Buffer with ff to signify no accounts created yet
-		fs.writeFileSync("accounts.dat", Buffer.concat([salt, nonce, encrypted], salt.length + nonce.length + encrypted.length));
-		// Erase secure data
-		sodium.api.memzero(key);
-		sodium.api.memzero(encrypted);
+		var iv: NodeBuffer = crypto.randomBytes(12); // For AES
+		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
+		
+		var cipher = crypto.createCipheriv("aes-256-gcm", key, iv);
+		var encrypted: NodeBuffer = cipher.update(new Buffer("ff", "hex")); // Buffer with ff to signify no accounts created yet
+		encrypted += cipher.final();
+		var tag: NodeBuffer = cipher.getAuthTag();
+		
+		fs.writeFileSync("accounts.dat", Buffer.concat([salt, iv, tag, encrypted], salt.length + iv.length + tag.length + encrypted.length));
+		
 		return "Created accounts.dat successfully".green;
 	}
 	else {
 		// File exists; decrypt it
 		var salt: NodeBuffer = rawAccounts.slice(0, 32);
-		var nonce: NodeBuffer = rawAccounts.slice(32, 32 + sodium.api.crypto_secretbox_NONCEBYTES);
-		if (salt.length !== 32 || nonce.length !== sodium.api.crypto_secretbox_NONCEBYTES)
+		var iv: NodeBuffer = rawAccounts.slice(32, 44);
+		var tag: NodeBuffer = rawAccounts.slice(44, 60);
+		if (salt.length !== 32 || iv.length !== 12 || tag.length !== 16)
 			return "Invalid accounts.dat file".red;
-		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, sodium.api.crypto_secretbox_KEYBYTES);
-		var encrypted = rawAccounts.slice(32 + sodium.api.crypto_secretbox_NONCEBYTES, rawAccounts.length);
-		var decrypted = sodium.api.crypto_secretbox_open(encrypted, nonce, key);
+		var key: NodeBuffer = crypto.pbkdf2Sync(password, salt, 500000, 32);
+		var encrypted = rawAccounts.slice(60, rawAccounts.length);
+		
+		var cipher = crypto.createDecipheriv("aes-256-gcm", key, iv);
+		cipher.setAuthTag(tag);
+		var decrypted = cipher.update(encrypted);
+		decrypted += cipher.final();
 		if (!decrypted)
 			return "Wrong password for the accounts.dat file".red;
-		if (sodium.api.memcmp(decrypted, new Buffer("ff", "hex"), 1) === 0)
+		if (Buffer.compare(new Buffer("ff", "hex"), decrypted) === 0)
 			return "No accounts found. Type 'create <NICKNAME>' to create an account.".yellow;
 		return;
 	}
