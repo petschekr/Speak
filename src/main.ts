@@ -94,7 +94,7 @@ function openUserAccount(password: NodeBuffer): string {
 }
 
 function commandInput(cmd, context, file, callback): void {
-	cmd = /\((.*)\r?\n?\)/.exec(cmd)[1]; // Removes () and \n or \r\n
+	cmd = /(.*)\r?\n?/.exec(cmd)[1]; // Removes () and \n or \r\n
 	var unlockCmd: RegExp = /^unlock (.*)/i;
 	var quitCmd: RegExp = /^(exit|quit)/i;
 	if (cmd.match(unlockCmd)) {
