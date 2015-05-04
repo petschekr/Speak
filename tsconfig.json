@@ -7,6 +7,7 @@
     },
 	"files": [
 		"src/hashing.ts",
+		"src/hashingWorker.ts",
 		"src/inboundpeer.ts",
 		"src/outboundpeer.ts",
 		"src/logging.ts",
