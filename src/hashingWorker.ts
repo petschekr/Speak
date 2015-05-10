@@ -6,12 +6,12 @@ function getHashWorker (messageStr: string, difficulty: number, start: number): 
 	var i = start;
 	
 	function getRawHash (message: Buffer, nonce: number): Buffer {
-		return crypto.createHmac("sha256", nonce.toString()).update(message).digest();
+		return crypto.createHmac("sha512", nonce.toString()).update(message).digest();
 	}
 	while (true) {
 		var result = getRawHash(message, i);
 		if (result.readUInt32BE(0) < difficulty) {
-			process.send({"hash": result.toString("hex")});
+			process.send({"hash": result.toString("hex").substr(0, 64)});
 			return;
 		}
 		i += numCPUs;
